@@ -1,0 +1,118 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: "Type of release"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  version-check:
+    needs: ci
+    runs-on: ubuntu-latest
+
+    outputs:
+      bump_type: ${{ steps.check_version.outputs.bump_type }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Get new version
+        id: new_version
+        run: echo ::set-output name=version::$(grep -Po '^version = \"\K[^\"]+' Cargo.toml)
+
+      - name: Get previous version
+        id: previous_version
+        run: echo ::set-output name=version::$(git describe --tags --abbrev=0 || echo '0.0.0')
+
+      - name: Check version
+        id: check_version
+        run: |
+          python .github/version_check.py ${{ steps.previous_version.outputs.version }} ${{ steps.new_version.outputs.version }}
+          echo "${{ github.event_name }} ${{ github.ref }}"
+
+      - name: Validate selected release type against version bump
+        run: |
+          echo "Expected release type: ${{ github.event.inputs.release_type }}"
+          echo "Actual release type: ${{ steps.check_version.outputs.bump_type }}"
+          if [ "${{ github.event.inputs.release_type }}" != "${{ steps.check_version.outputs.bump_type }}" ]; then
+            echo "Mismatch between selected release type and actual version bump. Aborting release."
+            exit 1
+          fi
+    
+  build-and-release:
+    needs: version-check
+
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v7
+
+    - name: Extract version from Cargo.toml
+      id: version
+      run: echo "version=$(grep -Po '^version = \"\K[^\"]+' Cargo.toml)" >> "$GITHUB_OUTPUT"
+
+    - name: Extract changelog entry
+      id: changelog
+      run: |
+        version=${{ steps.version.outputs.version }}
+        content=$(awk -v ver="$version" '
+          $0 ~ "^## \\["ver"\\]" { found = 1; print; next }
+          found && /^---$/ { exit }
+          found { print }
+        ' CHANGELOG.md)
+
+        echo "changelog<<EOF" >> $GITHUB_OUTPUT
+        echo "$content" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Build and package
+      run: |
+        cargo build --release
+        cargo install cargo-deb
+        cargo deb --output target/debian/somo-${{ steps.version.outputs.version }}.deb
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: somo-${{ steps.version.outputs.version }}-${{ github.run_number }}-${{ github.sha }}.deb
+        path: target/debian/somo-${{ steps.version.outputs.version }}.deb
+
+    - name: Publish to Crates.io
+      run: cargo publish
+      env:
+        CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ steps.version.outputs.version }}
+        release_name: 🎉 Somo Release ${{ steps.version.outputs.version }}
+        body: ${{ steps.changelog.outputs.changelog }}
+        draft: false
+        prerelease: false
+      id: create_release
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: target/debian/somo-${{ steps.version.outputs.version }}.deb
+        asset_name: somo-${{ steps.version.outputs.version }}-${{ github.run_number }}-${{ github.sha }}.deb
+        asset_content_type: application/x-debian-package

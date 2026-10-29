@@ -1,0 +1,76 @@
+# Changelog
+
+## [1.4.0] - 12.09.2026
+- **add** connection filtering by user, by @oiahoon
+- **bump** dependencies, by @dependabot
+
+---
+
+## [1.3.4] - 17.08.2026
+- **remove** redundant references to calm clippy, by @theopfr
+- **bump** dependencies, by @dependabot
+
+---
+
+## [1.3.3] - 30.04.2026
+- **fix** race condition in linux process enumeration, by @Jeidnx
+- **fix** sort by remote_address on macOS, by @aychun
+- **remove** nix run CI workflow job, by @theopfr
+- **bump** dependencies, by @dependabot
+
+---
+
+## [1.3.2] - 12.03.2026
+- **bump** dependencies, by @dependabot
+
+---
+
+## [1.3.1] - 21.11.2025
+- **bump** dependencies, by @dependabot
+
+---
+
+## [1.3.0] - 09.10.2025
+- **update** README to include Homebrew installation, by @colindean
+- **add** automatic paging if somo exceeds terminal height, by @fatelei
+- **add** integration tests, by @theopfr
+
+---
+
+## [1.2.0] - 02.09.2025
+- **add** new `--ipv4/-4` and `--ipv6/-6` flags, deprecating `--exclude-ipv6`, by @cma5
+- **add** config file for setting default flags, by @theopfr
+- **add** port annotation with IANA service names, by @pyjuan91
+- **add** new `--established/-e` flag for only showing established connections, by @theopfr
+- **update** table readability and refactor, by @reneleonhardt @theopfr
+- **add** Dependabot, by @reneleonhardt
+- **add** tests for parsing connections on macOS, by @theopfr
+
+---
+
+## [1.1.0] - 09.07.2025
+- **add** macOS support, by @belingud
+- **add** sorting by column, by @gerelef
+- **fix** panicking when being piped, by @gerelef
+- **add** compact table view, by @theopfr
+- **add** format and clippy check to CI, by @jerry1098
+- **update** CLI arguments with `--tcp`, `--udp` flags, by @celeo
+- **add** shell completions, by @polponline
+- **add** Nix packaging support, by @kachick
+- **update** kill functionality to use SIGTERM, by @rongyi
+- **add** JSON and custom formattable output, by @aptypp @gerelef
+- **fix** typos in README, by @cma5 @robinhutty
+- **add** MIT license, by @theopfr
+
+---
+
+## [1.0.0] - 04.06.2025
+- **update** flags, by @theopfr
+    - move ``--local-port`` to ``--port``
+    - move ``--port`` to ``--remote-port``
+    - add ``--listen``
+- **remove** abuseipdb scanning, by @theopfr
+- **add** logo, by @theopfr
+- **add** tests, by @theopfr
+
+---

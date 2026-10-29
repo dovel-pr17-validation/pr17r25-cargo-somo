@@ -1,0 +1,5 @@
+/target
+/.idea
+
+# Nix
+/result
